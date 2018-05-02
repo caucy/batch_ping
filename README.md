@@ -82,18 +82,26 @@ This library attempts to send an
 sudo sysctl -w net.ipv4.ping_group_range="0   2147483647"
 ```
 
-## to do:
+## To do:
  1, bind source ip
+
  2, support ipv6
 
-## attention:
+## Attention:
 1, ping 能ping 多个ip, id 号为进程号，seq 依次递增
+
 2, 因为是采用一发，一收，需要对输入ip 去重
+
 3, 不兼容 ipv4和ipv6 混合ping
+
 4, tick 需要close 
+
 5, ip 域名翻译的时候，需要用map 做映射
+
 6, 批量发包的时候，网络原因，会出现部分包异常
+
 7, 每轮不能统计超时
+
 8, bind source ip
 
 ## more:
