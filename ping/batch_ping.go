@@ -11,16 +11,6 @@ import (
 	"golang.org/x/net/ipv6"
 )
 
-// ping 能ping 多个ip, id 号为进程号，seq 依次递增
-// 因为是采用一发，一收，需要对输入ip 去重
-// 不兼容 ipv4和ipv6 混合ping
-// tick 需要close 
-// ip 域名翻译的时候，需要用map 做映射
-// 优雅退出问题
-// 批量发包的时候，网络原因，会出现部分包异常
-// 每轮不能统计超时
-// bind source ip
-
 var IsFinished bool = false
 
 type BatchPinger struct {
