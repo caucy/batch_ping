@@ -1,7 +1,6 @@
 package ping
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -19,8 +18,11 @@ type BatchPinger struct {
 	// pingers []*Pinger
 	done chan bool
 
-	//mapSeqPinger is seqId pinger map
-	mapSeqPinger map[int]*Pinger
+	// mapIpAddr is ip addr map
+	mapIpAddr map[string]string
+
+	// mapIpPinger is ip pinger map
+	mapIpPinger map[string]*Pinger
 
 	// interval is the wait time between each packet send. Default is 1s.
 	interval time.Duration
@@ -62,15 +64,13 @@ type BatchPinger struct {
 
 	// OnFinish can be called when Pinger exits
 	OnFinish func(map[string]*Statistics)
+
+	seqID int
 }
 
-//NewBatchPinger returns a new Pinger struct pointer, interval is default 1s, count default 5, count should not more than 65535
+//NewBatchPinger returns a new Pinger struct pointer, interval is default 1s, count default 5
 func NewBatchPinger(addrs []string, privileged bool) (batachPinger *BatchPinger, err error) {
 
-	// addrs can not more than 65535
-	if len(addrs) > 0xffff {
-		return nil, errors.New("addr can not more than 65535")
-	}
 	var network string
 	if privileged {
 		network = "ip"
@@ -79,14 +79,15 @@ func NewBatchPinger(addrs []string, privileged bool) (batachPinger *BatchPinger,
 	}
 
 	batachPinger = &BatchPinger{
-		interval:     time.Second,
-		timeout:      time.Second * 100000,
-		count:        5,
-		network:      network,
-		id:           getPId(),
-		mapSeqPinger: make(map[int]*Pinger),
-		done:         make(chan bool),
-		addrs:        addrs,
+		interval:    time.Second,
+		timeout:     time.Second * 100000,
+		count:       5,
+		network:     network,
+		id:          getPId(),
+		done:        make(chan bool),
+		addrs:       addrs,
+		mapIpPinger: make(map[string]*Pinger),
+		mapIpAddr:   make(map[string]string),
 	}
 
 	return batachPinger, nil
@@ -133,14 +134,13 @@ func (bp *BatchPinger) Run() (err error) {
 	bp.conn4.IPv4PacketConn().SetControlMessage(ipv4.FlagTTL, true)
 	bp.conn6.IPv6PacketConn().SetControlMessage(ipv6.FlagHopLimit, true)
 
-	var seqID int
 	for _, addr := range bp.addrs {
-		seqID++
-		pinger, err := NewPinger(addr, bp.id, seqID, bp.network)
+		pinger, err := NewPinger(addr, bp.id, bp.network)
 		if err != nil {
 			return err
 		}
-		bp.mapSeqPinger[seqID] = pinger
+		bp.mapIpPinger[pinger.ipaddr.String()] = pinger
+		bp.mapIpAddr[pinger.ipaddr.String()] = addr
 		pinger.SetConns(bp.conn4, bp.conn6)
 	}
 
@@ -189,11 +189,15 @@ func (bp *BatchPinger) recvIpv4(wg *sync.WaitGroup) {
 					}
 				}
 			}
+
 			recvPkg := &packet{bytes: bytes, nbytes: n, ttl: ttl, proto: protoIpv4, addr: addr}
 			if bp.debug {
-				log.Printf("recv pkg %v \n", recvPkg)
+				log.Printf("recv addr %v \n", recvPkg.addr.String())
 			}
-			bp.processPacket(recvPkg)
+			err = bp.processPacket(recvPkg)
+			if err != nil && bp.debug {
+				log.Printf("processPacket err %v, recvpkg %v \n", err, recvPkg)
+			}
 		}
 	}
 }
@@ -208,7 +212,7 @@ func (bp *BatchPinger) recvIpv6(wg *sync.WaitGroup) {
 		default:
 			bytes := make([]byte, 512)
 			bp.conn6.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
-			n, cm, _, err := bp.conn6.IPv6PacketConn().ReadFrom(bytes)
+			n, cm, addr, err := bp.conn6.IPv6PacketConn().ReadFrom(bytes)
 			if cm != nil {
 				ttl = cm.HopLimit
 			}
@@ -220,11 +224,15 @@ func (bp *BatchPinger) recvIpv6(wg *sync.WaitGroup) {
 					}
 				}
 			}
-			recvPkg := &packet{bytes: bytes, nbytes: n, ttl: ttl, proto: protoIpv6}
+
+			recvPkg := &packet{bytes: bytes, nbytes: n, ttl: ttl, proto: protoIpv6, addr: addr}
 			if bp.debug {
-				log.Printf("recv pkg %v \n", recvPkg)
+				log.Printf("recv addr %v \n", recvPkg.addr.String())
 			}
-			bp.processPacket(recvPkg)
+			err = bp.processPacket(recvPkg)
+			if err != nil && bp.debug {
+				log.Printf("processPacket err %v, recvpkg %v \n", err, recvPkg)
+			}
 		}
 
 	}
@@ -262,10 +270,11 @@ func (bp *BatchPinger) sendICMP(wg *sync.WaitGroup) {
 
 // batchSendICMP let all addr send pkg once
 func (bp *BatchPinger) batchSendICMP() {
-	for _, pinger := range bp.mapSeqPinger {
-		pinger.SendICMP()
+	for _, pinger := range bp.mapIpPinger {
+		pinger.SendICMP(bp.seqID)
 		pinger.PacketsSent++
 	}
+	bp.seqID = (bp.seqID + 1) & 0xffff
 }
 
 func (bp *BatchPinger) processPacket(recv *packet) error {
@@ -309,7 +318,16 @@ func (bp *BatchPinger) processPacket(recv *packet) error {
 
 		timestamp := bytesToTime(pkt.Data[:timeSliceLength])
 
-		if pinger, ok := bp.mapSeqPinger[pkt.Seq]; ok {
+		var ip string
+		if bp.network == "udp" {
+			if ip, _, err = net.SplitHostPort(recv.addr.String()); err != nil {
+				return fmt.Errorf("err ip : %v, err %v", recv.addr, err)
+			}
+		} else {
+			ip = recv.addr.String()
+		}
+
+		if pinger, ok := bp.mapIpPinger[ip]; ok {
 			pinger.PacketsRecv++
 			pinger.rtts = append(pinger.rtts, receivedAt.Sub(timestamp))
 		}
@@ -326,9 +344,9 @@ func (bp *BatchPinger) processPacket(recv *packet) error {
 // Statistics is all addr data Statistic
 func (bp *BatchPinger) Statistics() map[string]*Statistics {
 	stMap := map[string]*Statistics{}
-	for _, pinger := range bp.mapSeqPinger {
-		x := pinger.Statistics()
-		stMap[pinger.addr] = x
+	for ip, pinger := range bp.mapIpPinger {
+		addr := bp.mapIpAddr[ip]
+		stMap[addr] = pinger.Statistics()
 	}
 	return stMap
 }

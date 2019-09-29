@@ -29,7 +29,7 @@ var (
 )
 
 // NewPinger returns a new Pinger struct pointer
-func NewPinger(addr string, pid int, seqID int, network string) (*Pinger, error) {
+func NewPinger(addr string, pid int, network string) (*Pinger, error) {
 	ipaddr, err := net.ResolveIPAddr("ip", addr)
 	if err != nil {
 		return nil, err
@@ -54,7 +54,6 @@ func NewPinger(addr string, pid int, seqID int, network string) (*Pinger, error)
 		ipv4:     ipv4,
 		Size:     timeSliceLength,
 		Tracker:  r.Int63n(math.MaxInt64),
-		seqID:    seqID & 0xffff,
 	}, nil
 }
 
@@ -102,7 +101,6 @@ type Pinger struct {
 	ipv4    bool
 	size    int
 	id      int
-	seqID   int
 	network string
 
 	// conn4 is ipv4 icmp PacketConn
@@ -285,7 +283,7 @@ func (p *Pinger) Statistics() *Statistics {
 	return &s
 }
 
-func (p *Pinger) SendICMP() {
+func (p *Pinger) SendICMP(seqID int) {
 	var typ icmp.Type
 	if p.ipv4 {
 		typ = ipv4.ICMPTypeEcho
@@ -305,7 +303,7 @@ func (p *Pinger) SendICMP() {
 
 	body := &icmp.Echo{
 		ID:   p.id,
-		Seq:  p.seqID,
+		Seq:  seqID,
 		Data: t,
 	}
 
