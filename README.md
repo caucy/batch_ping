@@ -72,22 +72,22 @@ sudo sysctl -w net.ipv4.ping_group_range="0   2147483647"
 
 ## feature:
  
-####1, bind source ip
+#### 1, bind source ip
 
  ```
 bp.SetSource("") // if hava multi isp ip, can use one 
  ```
  
 
-####2, support ipv6
+#### 2, support ipv6
 
 can  support use ipv4 and ipv6 at the same time
 
-####3, support ping multi ip 
+#### 3, support ping multi ip 
 
 NewBatchPinger can support multi ip ping
 
-####4, support two model
+#### 4, support two model
 
 can use unprivileged mode , need not to be root
 
