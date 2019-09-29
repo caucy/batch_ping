@@ -171,7 +171,7 @@ func (bp *BatchPinger) recvIpv4(wg *sync.WaitGroup) {
 		default:
 			bytes := make([]byte, 512)
 			bp.conn4.SetReadDeadline(time.Now().Add(time.Millisecond * 100))
-			n, cm, _, err := bp.conn4.IPv4PacketConn().ReadFrom(bytes)
+			n, cm, addr, err := bp.conn4.IPv4PacketConn().ReadFrom(bytes)
 			if cm != nil {
 				ttl = cm.TTL
 			}
@@ -189,7 +189,7 @@ func (bp *BatchPinger) recvIpv4(wg *sync.WaitGroup) {
 					}
 				}
 			}
-			recvPkg := &packet{bytes: bytes, nbytes: n, ttl: ttl, proto: protoIpv4}
+			recvPkg := &packet{bytes: bytes, nbytes: n, ttl: ttl, proto: protoIpv4, addr: addr}
 			if bp.debug {
 				log.Printf("recv pkg %v \n", recvPkg)
 			}
@@ -297,7 +297,7 @@ func (bp *BatchPinger) processPacket(recv *packet) error {
 		// If we are privileged, we can match icmp.ID
 		if pkt.ID != bp.id {
 			if bp.debug {
-				log.Printf("drop pkg %+v id %v\n", pkt, bp.id)
+				log.Printf("drop pkg %+v id %v addr %s \n", pkt, bp.id, recv.addr)
 			}
 			return nil
 		}

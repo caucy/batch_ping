@@ -117,6 +117,7 @@ type packet struct {
 	nbytes int
 	ttl    int
 	proto  string
+	addr   net.Addr
 }
 
 // Packet represents a received and processed ICMP echo packet.
