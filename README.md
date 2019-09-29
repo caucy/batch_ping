@@ -51,7 +51,7 @@ func main() {
 ```
 
 It sends ICMP packet(s) and waits for a response. If it receives a response,
-it calls the "receive" callback. When it's finished, it calls the "finish"
+it calls the "receive" callback. When it's finished, can call the "OnFinish"
 callback.
 
 ## Installation:
