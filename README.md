@@ -11,52 +11,42 @@ Here is a very simple example :
 package main
 
 import (
-	"batch_ping/ping"
-	"time"
-	"fmt"
-	"golang.org/x/net/icmp"
+	"log"
+
+	"github.com/caucy/batch_ping"
 )
 
-func main (){
+func main() {
 	ipSlice := []string{}
-	ipSlice = append(ipSlice, "122.228.74.183")
-	ipSlice = append(ipSlice, "wwww.baidu.com")
+	// ip list should not more than 65535
+
+	ipSlice = append(ipSlice, "2400:da00:2::29") //support ipv6
 	ipSlice = append(ipSlice, "baidu.com")
-	ipSlice = append(ipSlice, "121.42.9.142")
-	ipSlice = append(ipSlice, "121.42.9.141")
-	ipSlice = append(ipSlice, "121.42.9.144")
-	ipSlice = append(ipSlice, "121.42.9.145")
-	ipSlice = append(ipSlice, "121.42.9.146")
-	ipSlice = append(ipSlice, "121.42.9.147")
-	ipSlice = append(ipSlice, "121.42.9.148")
-	ipSlice = append(ipSlice, "121.42.9.149")
-	ipSlice = append(ipSlice, "121.42.9.150")
 
-
-	bp, err := ping.NewBatchPinger(ipSlice, 4, time.Second*1, time.Second*10, true)
+	bp, err := ping.NewBatchPinger(ipSlice, false) // true will need to be root
 
 	if err != nil {
-		fmt.Println(err)
+		log.Fatalf("new batch ping err %v", err)
 	}
+	bp.SetDebug(true) // debug == true will fmt debug log
 
-	bp.OnRecv = func(pkt *icmp.Echo, srcAddr string) {
-		fmt.Printf("recv icmp_id=%d, icmp_seq=%d, srcAddr %v\n",
-			pkt.ID, pkt.Seq, srcAddr)
-	}
+	bp.SetSource("") // if hava multi source ip, can use one isp
 
 	bp.OnFinish = func(stMap map[string]*ping.Statistics) {
-		for ip, st := range stMap{
-			fmt.Printf("\n--- %s ping statistics ---\n", st.Addr)
-			fmt.Printf("ip %s, %d packets transmitted, %d packets received, %v%% packet loss\n",ip,
+		for ip, st := range stMap {
+			log.Printf("\n--- %s ping statistics ---\n", st.Addr)
+			log.Printf("ip %s, %d packets transmitted, %d packets received, %v%% packet loss\n", ip,
 				st.PacketsSent, st.PacketsRecv, st.PacketLoss)
-			fmt.Printf("round-trip min/avg/max/stddev = %v/%v/%v/%v\n",
+			log.Printf("round-trip min/avg/max/stddev = %v/%v/%v/%v\n",
 				st.MinRtt, st.AvgRtt, st.MaxRtt, st.StdDevRtt)
 		}
 
 	}
 
 	bp.Run()
+	bp.OnFinish(bp.Statistics())
 }
+
 
 ```
 
@@ -80,18 +70,30 @@ This library attempts to send an
 sudo sysctl -w net.ipv4.ping_group_range="0   2147483647"
 ```
 
-## To do:
- 1, bind source ip
+## feature:
+ 
+####1, bind source ip
 
- 2, support ipv6
+ ```
+bp.SetSource("") // if hava multi isp ip, can use one 
+ ```
+ 
+
+####2, support ipv6
+
+can  support use ipv4 and ipv6 at the same time
+
+####3, support ping multi ip 
+
+NewBatchPinger can support multi ip ping
+
+####4, support two model
+
+can use unprivileged mode , need not to be root
+
 
 ## Attention:
-1, ping can support ping many ip, id is pid，and seq will grows
+ping can support ping many ip, id is pid，and the add's seq is the same
 
-2, ip cannot be dereplic, this should be fix.
-
-3, can not support use ipv4 and ipv6 at the same time
-
-4, tick need close 
 
 
