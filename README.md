@@ -69,8 +69,7 @@ go get github.com/caucy/batch_ping
 
 ## Note on linux support :
 
-This library attempts to send an
-"unprivileged" ping via UDP. On linux, this must be enabled by setting
+On Mac, it can use unprivileged and privileged, but on  Linux or docker, you should use privileged and have sudo permission.
 
 ```
 sudo sysctl -w net.ipv4.ping_group_range="0   2147483647"
