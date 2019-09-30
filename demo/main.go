@@ -21,6 +21,7 @@ func main() {
 	bp.SetDebug(false) // debug == true will fmt debug log
 
 	bp.SetSource("") // if hava multi source ip, can use one isp
+	bp.SetCount(10)
 
 	bp.OnFinish = func(stMap map[string]*ping.Statistics) {
 		for ip, st := range stMap {
@@ -34,6 +35,9 @@ func main() {
 
 	}
 
-	bp.Run()
+	err = bp.Run()
+	if err != nil {
+		log.Printf("run err %v \n", err)
+	}
 	bp.OnFinish(bp.Statistics())
 }
