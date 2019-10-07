@@ -98,7 +98,7 @@ can use unprivileged mode , need not to be root
 
 
 ## Attention:
-ping can support ping many ip, id is pid，and the addr's seq is the same.
+ping can support ping many ip, id is pid，but should notice modify udp.sendspace , udp.recvspace and raw.recvspace and so on.
 
 fix same bug of github.com/sparrc/go-ping, such as if the dst server use the iptable ban ping, go-ping will hang .
 
