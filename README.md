@@ -1,8 +1,8 @@
-# batch-ping
+# batch-ping #
 
+[![Build Status](https://travis-ci.org/caucy/batch_ping.svg?branch=master)](https://travis-ci.org/caucy/batch_ping)
 
-ICMP batch Ping library for Go, inspired by
-[go-ping](https://github.com/sparrc/go-ping)
+ICMP batch Ping library for Go, inspired by [go-ping](https://github.com/sparrc/go-ping)
 
 Here is a very simple example :
 
