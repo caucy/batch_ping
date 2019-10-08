@@ -1,0 +1,5 @@
+language: go
+install:
+script:
+  - go test -v -covermode=count -coverprofile=coverage.out
+  - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ] && [ ! -z "$COVERALLS_TOKEN" ]; then $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN; fi'
