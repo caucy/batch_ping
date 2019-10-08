@@ -1,5 +1,7 @@
 language: go
-os: osx
+os: 
+  - osx
+  - linux
 install:
 script:
   - go test -v -covermode=count -coverprofile=coverage.out
