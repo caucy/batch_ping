@@ -13,7 +13,7 @@ func main() {
 	ipSlice = append(ipSlice, "2400:da00:2::29") //support ipv6
 	ipSlice = append(ipSlice, "baidu.com")
 
-	bp, err := ping.NewBatchPinger(ipSlice, false) // true will need to be root
+	bp, err := ping.NewBatchPinger(ipSlice, true) // true will need to be root, false may be permission denied
 
 	if err != nil {
 		log.Fatalf("new batch ping err %v", err)

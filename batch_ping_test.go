@@ -18,6 +18,7 @@ func TestNewBatchPinger(t *testing.T) {
 			name: "newBatchPinger",
 			args: args{
 				addrs: []string{"baidu.com"},
+                privileged: true,
 			},
 			wantErr: false,
 		},
@@ -97,6 +98,7 @@ func TestNewBatchPinger_multiAddr(t *testing.T) {
 					"39.156.69.48",
 					"39.156.69.49",
 					"39.156.69.50"},
+                    privileged: true,
 			},
 			wantErr: false,
 		},
@@ -131,6 +133,7 @@ func TestNewBatchPinger_ipv6(t *testing.T) {
 			name: "newBatchPinger",
 			args: args{
 				addrs: []string{"2400:da00:2::29"},
+                privileged: true,
 			},
 			wantErr: false,
 		},
