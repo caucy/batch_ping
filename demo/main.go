@@ -20,7 +20,7 @@ func main() {
 	}
 	bp.SetDebug(false) // debug == true will fmt debug log
 
-	bp.SetSource("") // if hava multi source ip, can use one isp
+	bp.SetSource("") // if have multi source ip, can use one ip
 	bp.SetCount(10)
 
 	bp.OnFinish = func(stMap map[string]*ping.Statistics) {
@@ -32,7 +32,6 @@ func main() {
 				st.MinRtt, st.AvgRtt, st.MaxRtt, st.StdDevRtt)
 			log.Printf("rtts is %v \n", st.Rtts)
 		}
-
 	}
 
 	err = bp.Run()
